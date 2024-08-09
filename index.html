@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UD Command Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .content-item {
+            margin-bottom: 10px;
+        }
+        .content-item input {
+            margin-right: 10px;
+        }
+        #output-container {
+            margin-top: 20px;
+        }
+        #output-warning {
+            color: red;
+            font-weight: bold;
+            display: none;
+        }
+        #output {
+            width: 100%;
+            height: 100px;
+            margin-top: 10px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            background: #f1f1f1;
+        }
+        .tab.active {
+            background: white;
+            border-top: 2px solid #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Universal Display Command Generator</h1>
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('addwidget')">AddWidget</div>
+        <div class="tab" onclick="showTab('editwidget')">EditWidget</div>
+        <div class="tab" onclick="showTab('removewidget')">RemoveWidget</div>
+        <div class="tab" onclick="showTab('addline')">AddLine</div>
+        <div class="tab" onclick="showTab('editline')">EditLine</div>
+        <div class="tab" onclick="showTab('removeline')">RemoveLine</div>
+    </div>
+    <form id="kos-form">
+        <div id="addwidget" class="tab-content active">
+            <div>
+                <label for="displayName">Display Name:</label>
+                <input type="text" id="displayName" name="displayName" required>
+            </div>
+            <div>
+                <label for="x">X:</label>
+                <input type="number" id="x" name="x">
+            </div>
+            <div>
+                <label for="y">Y:</label>
+                <input type="number" id="y" name="y">
+            </div>
+            <div>
+                <label for="width">Width:</label>
+                <input type="number" id="width" name="width">
+            </div>
+            <div>
+                <label for="fontsize">Font Size:</label>
+                <input type="number" id="fontsize" name="fontsize">
+            </div>
+            <div>
+                <label for="background">Background:</label>
+                <input type="text" id="background" name="background">
+            </div>
+            <div id="lines">
+                <h2>Lines</h2>
+                <!-- Line items will be added here dynamically -->
+            </div>
+            <button type="button" onclick="addLineItem()">Add Line Item</button>
+        </div>
+        <div id="editwidget" class="tab-content">
+            <div>
+                <label for="index">Widget Identifier:</label>
+                <input type="text" id="index" name="index">
+            </div>
+            <div>
+                <label for="editDisplayName">Display Name:</label>
+                <input type="text" id="editDisplayName" name="editDisplayName">
+            </div>
+            <div>
+                <label for="widgetX">X:</label>
+                <input type="number" id="widgetX" name="widgetX">
+            </div>
+            <div>
+                <label for="widgetY">Y:</label>
+                <input type="number" id="widgetY" name="widgetY">
+            </div>
+            <div>
+                <label for="widgetWidth">Width:</label>
+                <input type="number" id="widgetWidth" name="widgetWidth">
+            </div>
+            <div>
+                <label for="widgetFontSize">Font Size:</label>
+                <input type="number" id="widgetFontSize" name="widgetFontSize">
+            </div>
+            <div>
+                <label for="widgetBackground">Background:</label>
+                <input type="text" id="widgetBackground" name="widgetBackground">
+            </div>
+        </div>
+        <div id="removewidget" class="tab-content">
+            <div>
+                <label for="lineWidget">Widget Identifier:</label>
+                <input type="text" id="deletelineWidget" name="lineWidget">
+            </div>
+        </div>
+        <div id="addline" class="tab-content">
+            <div>
+                <label for="lineWidget">Widget Identifier:</label>
+                <input type="text" id="addlineWidget" name="lineWidget">
+            </div>
+            <div id="line-items">
+                <h2>Lines</h2>
+                <!-- Line items will be added here dynamically -->
+            </div>
+            <button type="button" onclick="addLineItem(true)">Add Line Item</button>
+        </div>
+        <div id="editline" class="tab-content">
+            <div>
+                <label for="lineWidget">Widget Identifier:</label>
+                <input type="text" id="editlineWidget" name="lineWidget">
+            </div>
+            <div id="line-items">
+                <h2>Lines</h2>
+                <!-- Line items will be added here dynamically -->
+            </div>
+            <button type="button" onclick="addLineItem(true)">Add Line Item</button>
+        </div>
+        <div id="removeline" class="tab-content">
+            <div>
+                <label for="lineWidget">Widget Identifier:</label>
+                <input type="text" id="deletelinelineWidget" name="lineWidget">
+            </div>
+            <div>
+                <label for="index">Line Index:</label>
+                <input type="number" id="deleteindex" name="index">
+            </div>
+        </div>
+        <br><br>
+        <button type="submit">Generate Command</button>
+    </form>
+    <div id="output-container">
+        <div id="output-warning">Warning: Command is more than 500 characters long, consider adding lines after the widget creation or !runscript this command.</div>
+        <textarea id="output" readonly></textarea>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.toggle('active', tab.textContent.toLowerCase() === tabId);
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.toggle('active', content.id === tabId);
+            });
+
+            const indexField = document.getElementById('index');
+            const deleteindexField = document.getElementById('deleteindex');
+            const deletelineWidgetField = document.getElementById('deletelineWidget');
+            const addlineWidgetField = document.getElementById('addlineWidget');
+            const editlineWidgetField = document.getElementById('editlineWidget');
+            const displayNameField = document.getElementById('displayName');
+            const deletelinelineWidgetField = document.getElementById('deletelinelineWidget');
+
+            displayNameField.removeAttribute('required');
+            indexField.removeAttribute('required');
+            deleteindexField.removeAttribute('required');
+            deletelineWidgetField.removeAttribute('required');
+            addlineWidgetField.removeAttribute('required');
+            editlineWidgetField.removeAttribute('required');
+            deletelinelineWidgetField.removeAttribute('required');
+
+            if (tabId === 'addwidget') {
+                displayNameField.setAttribute('required', 'required');
+            }
+            else if (tabId === 'editwidget') {
+                indexField.setAttribute('required', 'required');
+            }
+            else if (tabId === 'removewidget') {
+                deletelineWidgetField.setAttribute('required', 'required');
+            }
+            else if (tabId === 'addline') {
+                addlineWidgetField.setAttribute('required', 'required');
+            }
+            else if (tabId === 'editline') {
+                editlineWidgetField.setAttribute('required', 'required');
+            }
+            else if (tabId === 'deleteline') {
+                deletelinelineWidgetField.setAttribute('required', 'required');
+                deleteindexField.setAttribute('required', 'required');
+            }
+        }
+
+        function addLineItem(addIndex = false) {
+            const linesDiv = document.querySelector('.tab-content.active #line-items') || document.getElementById('lines');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'content-item';
+            var innerHTML = ``;
+            if (addIndex) {
+                innerHTML += `
+                <label for="index">Line Index:</label>
+                <input type="number" name="lineindex">
+                `;
+            }
+            innerHTML += `
+                <label for="type">Type:</label>
+                <input type="text" name="type">
+                <label for="label">Label:</label>
+                <input type="text" name="label">
+                <label for="prefix">Prefix:</label>
+                <input type="text" name="prefix">
+                <label for="postfix">Postfix:</label>
+                <input type="text" name="postfix">
+                <label for="decimalDigits">Decimal Digits:</label>
+                <input type="number" name="decimalDigits">
+                <label for="value">Value:</label>
+                <input type="text" name="value">
+                <button type="button" onclick="removeLineItem(this)">Remove</button>
+            `;
+
+            itemDiv.innerHTML = innerHTML;
+            linesDiv.appendChild(itemDiv);
+        }
+
+        function removeLineItem(button) {
+            const itemDiv = button.parentNode;
+            itemDiv.parentNode.removeChild(itemDiv);
+        }
+
+        function escapeDoubleQuotes(str) {
+            return str.replace(/"/g, '" + char(34) + "');
+        }
+
+        document.getElementById('kos-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
+
+            let command = '';
+            if (activeTab === 'addwidget') {
+                const displayName = escapeDoubleQuotes(formData.get('displayName'));
+                command = `ud:sendmessage(lex("addwidget", lex("DisplayName", "${displayName}"`;
+
+                const optionalFields = ["x", "y", "width", "fontsize", "background"];
+                optionalFields.forEach(field => {
+                    let value = formData.get(field);
+                    if (value) {
+                        value = isNaN(value) ? `"${escapeDoubleQuotes(value)}"` : value;
+                        command += `, "${field.charAt(0).toUpperCase() + field.slice(1)}", ${value}`;
+                    }
+                });
+
+                const lines = [];
+                document.querySelectorAll('.content-item').forEach(item => {
+                    const type = item.querySelector('input[name="type"]').value;
+                    const label = `"${escapeDoubleQuotes(item.querySelector('input[name="label"]').value || '')}"`;
+                    const prefix = item.querySelector('input[name="prefix"]').value;
+                    const postfix = item.querySelector('input[name="postfix"]').value;
+                    const decimalDigits = item.querySelector('input[name="decimalDigits"]').value;
+                    const value = item.querySelector('input[name="value"]').value;
+
+                    if ((type === "" || type === "item") && (!value)) {
+                        alert("Value is required when Type is empty or 'item'.");
+                        return;
+                    }
+
+                    let line = `lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
+                    if (type) line += `, "type", "${escapeDoubleQuotes(type)}"`;
+                    if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
+                    if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
+                    if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    line += `)`;
+                    lines.push(line);
+                });
+
+                if (lines.length > 0) {
+                    command += `, "Contents", list(${lines.join(', ')})`;
+                }
+
+                command += `))).`;
+            } else if (activeTab === 'editwidget') {
+                const index = escapeDoubleQuotes(formData.getAll('index')[0]);
+                command = `ud:sendmessage(lex("editwidget", lex("index", ${isNaN(index) ? `"${index}"` : index}, "widget", lex(`;
+
+                const optionalFields = ["editDisplayName", "widgetX", "widgetY", "widgetWidth", "widgetFontSize", "widgetBackground"];
+                var doSlice = false;
+                optionalFields.forEach(field => {
+                    let value = formData.get(field);
+                    if (value) {
+                        const key = field.replace('widget', '').replace('edit', '');
+                        value = isNaN(value) ? `"${escapeDoubleQuotes(value)}"` : value;
+                        command += `"${key.charAt(0).toUpperCase() + key.slice(1)}", ${value}, `;
+                        doSlice = true;
+                    }
+                });
+
+                if (doSlice) command = command.slice(0, -2); // Remove the last comma and space
+                command += `)))).`;
+            } else if (activeTab === 'removewidget') { 
+                const widget = escapeDoubleQuotes(formData.getAll('lineWidget')[0]);
+                command = `ud:sendmessage(lex("removewidget", ${isNaN(widget) ? `"${widget}"` : widget})).`;
+            } else if (activeTab === 'addline') {
+                const widget = escapeDoubleQuotes(formData.getAll('lineWidget')[1]);
+                command = `ud:sendmessage(lex("addline", lex("widget", "${widget}"`;
+
+                const lines = [];
+                document.querySelectorAll('.tab-content.active .content-item').forEach(item => {
+                    const index = item.querySelector('input[name="lineindex"]').value;
+                    const type = item.querySelector('input[name="type"]').value;
+                    const label = `"${escapeDoubleQuotes(item.querySelector('input[name="label"]').value || '')}"`;
+                    const prefix = item.querySelector('input[name="prefix"]').value;
+                    const postfix = item.querySelector('input[name="postfix"]').value;
+                    const decimalDigits = item.querySelector('input[name="decimalDigits"]').value;
+                    const value = item.querySelector('input[name="value"]').value;
+
+                    if (!value) {
+                        alert("Value is required.");
+                        return;
+                    }
+
+                    let line = command;
+                    if (index) line += `, "index", ${index}`;
+                    line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
+                    if (type) line += `, "type", "${escapeDoubleQuotes(type)}"`;
+                    if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
+                    if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
+                    if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    line += `)))).`;
+                    lines.push(line);
+                });
+
+                if (lines.length > 0) {
+
+                    command = lines.join("\n");
+                }
+                else {
+                    command = ``;
+                }
+            } else if (activeTab === 'editline') {
+                const widget = escapeDoubleQuotes(formData.getAll('lineWidget')[2]);
+                command = `ud:sendmessage(lex("editline", lex("widget", ${isNaN(widget) ? `"${widget}"` : widget}`;
+
+                const lines = [];
+                document.querySelectorAll('.tab-content.active .content-item').forEach(item => {
+                    const index = item.querySelector('input[name="lineindex"]').value;
+                    const type = item.querySelector('input[name="type"]').value;
+                    const label = item.querySelector('input[name="label"]').value;
+                    const prefix = item.querySelector('input[name="prefix"]').value;
+                    const postfix = item.querySelector('input[name="postfix"]').value;
+                    const decimalDigits = item.querySelector('input[name="decimalDigits"]').value;
+                    const value = item.querySelector('input[name="value"]').value;
+
+                    if (!index) {
+                        alert("Index is required.");
+                        return;
+                    }
+
+                    let line = command;
+                    line += `, "index", ${index}`;
+                    line += `, "line", lex(`;
+                    if (label) line += `"label", "${escapeDoubleQuotes(label)}", `;
+                    if (value) line += `"value", "${escapeDoubleQuotes(value)}", `;
+                    if (type) line += `"type", "${escapeDoubleQuotes(type)}", `;
+                    if (prefix) line += `"prefix", "${escapeDoubleQuotes(prefix)}", `;
+                    if (postfix) line += `"postfix", "${escapeDoubleQuotes(postfix)}", `;
+                    if (decimalDigits) line += `"decimalDigits", ${decimalDigits}, `;
+                    if (label || value || type || prefix || postfix || decimalDigits) line = line.slice(0, -2); // Remove the last comma and space
+                    line += `)))).`;
+                    lines.push(line);
+                });
+
+                if (lines.length > 0) {
+
+                    command = lines.join("\n");
+                }
+                else {
+                    command = ``;
+                }
+            } else if (activeTab === 'removeline') {
+                const widget = escapeDoubleQuotes(formData.getAll('lineWidget')[3]);
+                const index = formData.getAll('index')[1];
+                command = `ud:sendmessage(lex("removeline", lex("widget", ${isNaN(widget) ? `"${widget}"` : widget}, "index", ${index}))).`;
+            }
+
+            const outputElement = document.getElementById('output');
+            outputElement.value = command;
+
+            const warningElement = document.getElementById('output-warning');
+            if (command.length > 500) {
+                warningElement.style.display = 'block';
+            } else {
+                warningElement.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
