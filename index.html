@@ -312,15 +312,15 @@
                         return;
                     }
 
-                    let line = command;;
+                    let line = ``;
                     if (type && type === "line") {
-                        line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
+                        line += `lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
                         if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
                         if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
                         if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
                     }
                     else {
-                        line += `, "line", lex("type", "${escapeDoubleQuotes(type)}"`;
+                        line += `lex("type", "${escapeDoubleQuotes(type)}"`;
                     }
                     line += `)`;
                     lines.push(line);
