@@ -53,6 +53,25 @@
 </head>
 <body>
     <h1>Universal Display Command Generator</h1>
+    <h3>Getting Started</h3>
+    <p>
+        To set up a UniversalDisplay for your ship you need atleast 2 CPUs, one of these cores will have to run the UniversalDisplay script, ideally this is not CPU 1. Assuming you have a homeconnection, or you used <code>!runscript ruaNQv7z</code> this can be simply done by running <code>run universaldisplay.</code><br>
+        After this you'll have to switch to your other CPU and set up the connection to the display core, assuming you only have one core running the UniversalDisplay script on this ship this can be achieved by running <code>for pcs in buildlist("processors") if pcs:bootfilename:contains("UniversalDisplay") set ud to pcs:connection.</code><br>
+        Once you have your core setup you can use all the commands below to succesfully setup your display.<br><br>
+        <code>ud:sendmessage("reboot").</code> - Reboots the display core, this can be useful to check if you have defined UD correctly or to update the code.<br>
+        <code>ud:sendmessage("exit").</code> - Gracefully exits the script, disposing of all widgets in the process, cleaner than switching to the CPU and doing <code>^c</code>.<br>
+        <code>ud:sendmessage("refresh").</code> - Disposes of all the widgets and recreates them. Useful to get widgets to show even when F2 is off.<br>
+        <code>ud:sendmessage("show").</code> - Opens the terminal of the display core.<br>
+        <code>ud:sendmessage("hide").</code> - Closes the terminal of the display core.<br>
+        <code>ud:sendmessage("ListWidgets").</code> - Lists all the actives widget's indexes and displaynames on the screen.<br>
+        <code>ud:sendmessage(lex("RefreshRate", scalar)).</code> - Sets the RefreshRate of the widgets, Default: 20<br>
+        <code>ud:sendmessage(lex("HideOnInactive", boolean)).</code> - Sets if the widgets will be hidden when the ship is not the activevessel, Default: true<br>
+        <code>ud:sendmessage(lex("TrainingWheels", boolean)).</code> - Sets if delegates should be validated, this validation is imperfect so you might have to disable it if you receive odd warnings, Default: true<br><br>
+        When setting up your widgets, you are welcome to use the included helper functions for formatting data for the screen.<br>
+        <code>FormatTime(seconds).</code><br>
+        <code>FormatSI(value, unitstring, decimaldigits (default 2), fullPrefixes (default false)).</code>
+    </p>
+    <br>
     <div class="tabs">
         <div class="tab active" onclick="showTab('addwidget')">AddWidget</div>
         <div class="tab" onclick="showTab('editwidget')">EditWidget</div>
@@ -228,7 +247,11 @@
             }
             innerHTML += `
                 <label for="type">Type:</label>
-                <input type="text" name="type">
+                <select name="type">
+                    <option value="item" selected>Item</option>
+                    <option value="spacer">Spacer</option>
+                    <option value="seperator">Seperator</option>
+                </select>
                 <label for="label">Label:</label>
                 <input type="text" name="label">
                 <label for="prefix">Prefix:</label>
@@ -252,7 +275,7 @@
         }
 
         function escapeDoubleQuotes(str) {
-            return str.replace(/"/g, '" + char(34) + "');
+            return str.replace(/["“”″‶]/g, '" + char(34) + "');
         }
 
         document.getElementById('kos-form').addEventListener('submit', function(event) {
@@ -277,23 +300,28 @@
 
                 const lines = [];
                 document.querySelectorAll('.content-item').forEach(item => {
-                    const type = item.querySelector('input[name="type"]').value;
+                    const type = item.querySelector('select[name="type"]').value;
                     const label = `"${escapeDoubleQuotes(item.querySelector('input[name="label"]').value || '')}"`;
                     const prefix = item.querySelector('input[name="prefix"]').value;
                     const postfix = item.querySelector('input[name="postfix"]').value;
                     const decimalDigits = item.querySelector('input[name="decimalDigits"]').value;
                     const value = item.querySelector('input[name="value"]').value;
 
-                    if ((type === "" || type === "item") && (!value)) {
-                        alert("Value is required when Type is empty or 'item'.");
+                    if (type === "item" && !value) {
+                        alert("Value is required.");
                         return;
                     }
 
-                    let line = `lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
-                    if (type) line += `, "type", "${escapeDoubleQuotes(type)}"`;
-                    if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
-                    if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
-                    if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    let line = command;;
+                    if (type && type === "line") {
+                        line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
+                        if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
+                        if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
+                        if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    }
+                    else {
+                        line += `, "line", lex("type", "${escapeDoubleQuotes(type)}"`;
+                    }
                     line += `)`;
                     lines.push(line);
                 });
@@ -331,25 +359,29 @@
                 const lines = [];
                 document.querySelectorAll('.tab-content.active .content-item').forEach(item => {
                     const index = item.querySelector('input[name="lineindex"]').value;
-                    const type = item.querySelector('input[name="type"]').value;
+                    const type = item.querySelector('select[name="type"]').value;
                     const label = `"${escapeDoubleQuotes(item.querySelector('input[name="label"]').value || '')}"`;
                     const prefix = item.querySelector('input[name="prefix"]').value;
                     const postfix = item.querySelector('input[name="postfix"]').value;
                     const decimalDigits = item.querySelector('input[name="decimalDigits"]').value;
                     const value = item.querySelector('input[name="value"]').value;
 
-                    if (!value) {
+                    if (type === "item" && !value) {
                         alert("Value is required.");
                         return;
                     }
 
                     let line = command;
                     if (index) line += `, "index", ${index}`;
-                    line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
-                    if (type) line += `, "type", "${escapeDoubleQuotes(type)}"`;
-                    if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
-                    if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
-                    if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    if (type && type === "line") {
+                        line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
+                        if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
+                        if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
+                        if (decimalDigits) line += `, "decimalDigits", ${decimalDigits}`;
+                    }
+                    else {
+                        line += `, "line", lex("type", "${escapeDoubleQuotes(type)}"`;
+                    }
                     line += `)))).`;
                     lines.push(line);
                 });
@@ -368,7 +400,7 @@
                 const lines = [];
                 document.querySelectorAll('.tab-content.active .content-item').forEach(item => {
                     const index = item.querySelector('input[name="lineindex"]').value;
-                    const type = item.querySelector('input[name="type"]').value;
+                    const type = item.querySelector('select[name="type"]').value;
                     const label = item.querySelector('input[name="label"]').value;
                     const prefix = item.querySelector('input[name="prefix"]').value;
                     const postfix = item.querySelector('input[name="postfix"]').value;
