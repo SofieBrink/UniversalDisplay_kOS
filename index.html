@@ -313,7 +313,7 @@
                     }
 
                     let line = ``;
-                    if (type && type === "line") {
+                    if (type && type === "item") {
                         line += `lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
                         if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
                         if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
