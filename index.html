@@ -1,3 +1,11 @@
+<!-- TODO -->
+<!-- 
+fix reading lines from all tabs
+add insert, move up and move down buttons for lines.
+fix styling 
+-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -354,7 +362,7 @@
                 command = `ud:sendmessage(lex("removewidget", ${isNaN(widget) ? `"${widget}"` : widget})).`;
             } else if (activeTab === 'addline') {
                 const widget = escapeDoubleQuotes(formData.getAll('lineWidget')[1]);
-                command = `ud:sendmessage(lex("addline", lex("widget", "${widget}"`;
+                command = `ud:sendmessage(lex("addline", lex("widget", ${isNaN(widget) ? `"${widget}"` : widget}`;
 
                 const lines = [];
                 document.querySelectorAll('.tab-content.active .content-item').forEach(item => {
@@ -373,7 +381,7 @@
 
                     let line = command;
                     if (index) line += `, "index", ${index}`;
-                    if (type && type === "line") {
+                    if (type && type === "item") {
                         line += `, "line", lex("label", ${label}, "value", "${escapeDoubleQuotes(value)}"`;
                         if (prefix) line += `, "prefix", "${escapeDoubleQuotes(prefix)}"`;
                         if (postfix) line += `, "postfix", "${escapeDoubleQuotes(postfix)}"`;
@@ -443,7 +451,7 @@
             outputElement.value = command;
 
             const warningElement = document.getElementById('output-warning');
-            if (command.length > 500) {
+            if (command.length > 491) {
                 warningElement.style.display = 'block';
             } else {
                 warningElement.style.display = 'none';
